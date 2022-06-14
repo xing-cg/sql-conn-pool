@@ -1,11 +1,3 @@
----
-title: MySQL数据库连接池
-typora-root-url: ../..
-categories:
-  - [项目, 连接池]
-  - [数据库]
----
-
 # 内容
 
 C++实现的小型项目, MySQL数据库连接池, 属于常用组件;
