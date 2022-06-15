@@ -109,3 +109,35 @@ bool MySQLConnectionPool::loadConfigFile()
     }
     return true;
 }
+std::shared_ptr<MySQLConnection> MySQLConnectionPool::getConnection()
+{
+    std::unique_lock<std::mutex> lock(m_queueMutex);
+    while(m_connectionQueue.empty())
+    {
+        if(std::cv_status::timeout == 
+            m_queueNotEmpty.wait_for(
+                lock, std::chrono::milliseconds(m_connectionTimeout)))
+        {
+            if(m_connectionQueue.empty())
+            {
+                LOG("get the idle connection timeout, failed!");
+                return nullptr;
+            }
+        }
+    }
+    /**
+     * shared_ptr智能指针析构时, 会把connection资源delete, 
+     * 即调用connection析构函数, 会把connection close,
+     * 我们不想让资源释放, 就需要自定义shared_ptr的释放资源方式,
+     * 即重写删除器, 让connection直接归还到queue;
+     */
+    std::shared_ptr<MySQLConnection> sp(m_connectionQueue.front(),
+        [&](MySQLConnection *pconn){
+            std::unique_lock<std::mutex> lock(m_queueMutex);
+            m_connectionQueue.push(pconn);
+        });
+    m_connectionQueue.pop();
+
+    m_queueNotEmpty.notify_all();//通知生产者
+    return sp;
+}
