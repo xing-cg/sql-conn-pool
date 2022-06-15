@@ -25,6 +25,11 @@ private:
      * 定义在连接池类中, 是为了方便线程函数访问连接池类的成员属性; 
      */
     void produceConnectionTask();
+    /**
+     * 定时线程, 扫描超过maxIdleTime的多余空闲连接, 释放;
+     * sweep - 形象地说明语义, 扫描并消除;
+     */
+    void sweepConnectionTask();
 private:
     std::string m_ip;
     unsigned short m_port;
